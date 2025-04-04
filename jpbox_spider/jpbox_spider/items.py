@@ -6,7 +6,7 @@
 import scrapy
 
 
-class JpboxSpiderItem(scrapy.Item):
+class JpboxItem(scrapy.Item):
     # define the fields for your item here like:
     titre_film = scrapy.Field()
     pass
