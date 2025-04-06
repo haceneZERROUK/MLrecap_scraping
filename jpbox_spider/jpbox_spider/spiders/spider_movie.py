@@ -9,7 +9,7 @@ class MoviesSPider(scrapy.Spider):
     """
 
 
-    name='moviescrap'
+    name='moviesspider'
     start_urls = ['https://www.jpbox-office.com/v9_demarrage.php?view=2']
     
 

@@ -14,9 +14,7 @@ class MoviesSPider(scrapy.Spider):
 
 
     name='moviesscrap'
-    
-    # start_urls = ['https://www.jpbox-office.com/v9_demarrage.php?view=2']
-    
+        
     def start_requests(self):
         """
         Cette méthode est appelée par Scrapy au début de l'exécution du spider.
@@ -47,14 +45,12 @@ class MoviesSPider(scrapy.Spider):
             Alors, deux requêtes seront envoyées, une vers `https://www.example.com/film1` et une autre vers `https://www.example.com/film2`,
             et les réponses seront envoyées à la méthode `parse`.
         """
-        # Ouvre le fichier JSON et charge les données
+
         with open('list_movies.json', 'r', encoding='utf-8') as json_data:
             data = json.load(json_data)
 
-        # Extraction des URLs
         urls_list = [movie["url_movie"] for movie in data]
 
-        # Envoi de la requête pour chaque URL
         for url in urls_list:
             yield scrapy.Request(url, callback=self.parse)
 
@@ -65,24 +61,62 @@ class MoviesSPider(scrapy.Spider):
         
         Récupère les films de la page courante et génère un dictionnaire avec les informations suivantes :
         - name : Nom du film
+        - original_name : Nom du film dans la langue originale
+        - realisateur
         - annee : Année de sortie du film
+        -category
         - weeklyentrance : Entrées hebdomadaires
-        - url_movie : URL du film
-        
         Ensuite, il suit le lien de la page suivante si disponible.
         """
+
+        if response.status == 200:
+            # Extraire les données
+            print(f'Scrap du lien {response.css('tr > td.texte_2022titre > h1::text').get().strip()}')
+        else:
+            # Gérer les erreurs
+            self.logger.error(f"Erreur de récupération de la page {response.url}")
 
         name = response.css('tr > td.texte_2022titre > h1::text').get().strip()
         original_name = response.css('tr > td.texte_2022titre > h2::text').get()
         if original_name:
             original_name = original_name.strip()
         else:
-            original_name = name 
+            original_name = name
 
+        director = response.css('table.table_2022titre td.texte_2022titre h4 a::text').get()
 
+        if director:
+            director = response.css('table.table_2022titre td.texte_2022titre h4 a::text').get().strip()
+        else:
+            director = 'no information'
+
+        date = response.css('table.tablelarge1 tr td p a::text').get()
+
+        if date:
+            date = response.css('table.tablelarge1 tr td p a::text').get()
+        else:
+            date = 'no information'
+            
+
+        data_result = response.css('table.tablesmall.tablesmall2 td.col_poster_contenu_majeur').extract()
+        data_result_clean = [clean_data.replace('<td colspan="2" class="col_poster_contenu_majeur">', '')
+                                .replace(' ','')
+                                .replace("</td>",'')
+                            .replace('<tdclass=\"col_poster_contenu_majeur\">', '') for clean_data in data_result]
+
+        movie_infos =  response.css('table.table_2022titre td.texte_2022titre h3 ::text').extract()
+        
+        
         yield{
 
         'name': name,
         'original_name':original_name,
-        'year': response.css('table.tablelarge1 tr td p a::text').get().strip()
+        'director': director,
+        'country':movie_infos[1],
+        'category':movie_infos[5],
+        'date': date,
+        'PEGI':response.css('table.tablelarge1 div.bloc_infos_center.tablesmall1::text').extract()[-1].strip(),
+        'duration':movie_infos[4].strip(),
+        'total_entrances': data_result_clean[0],
+        'weekly_entrances': data_result_clean[-1]
         }
