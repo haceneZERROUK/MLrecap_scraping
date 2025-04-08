@@ -1,1 +1,3 @@
 Scrapy==2.12.0
+scrapy-selenium
+selenium

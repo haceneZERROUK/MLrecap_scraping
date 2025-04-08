@@ -1,6 +1,9 @@
 import scrapy
 import scrapy.selector
 from imdb.items import ImdbItem
+import json
+import datetime
+
 
 
 class MovieSpider(scrapy.Spider):
@@ -16,63 +19,95 @@ class MovieSpider(scrapy.Spider):
     
     custom_settings = {
         'FEED_EXPORT_FIELDS': [
-            "original_title", 
-            "fr_title", 
-            "release_year", 
-            "certification", 
-            "duration", 
-            "score", 
-            "metascore", 
-            "voters_number", 
-            "description", 
-            "categories", 
-            "Languages", 
-            "prod_cies", 
-            "countries", 
-            "actors", 
-            "directors", 
-            "writers", 
-            "budget"
-                ]
+            "original_title_imdb",
+            "fr_title_imdb",
+            "release_year_imdb",
+            "certification_imdb",
+            "duration_imdb",
+            "score_imdb",
+            "metascore_imdb",
+            "voters_number_imdb",
+            "description_imdb",
+            "categories_imdb",
+            "languages_imdb",
+            "prod_cies_imdb",
+            "countries_imdb",
+            "actors_imdb",
+            "directors_imdb",
+            "writers_imdb",
+            "budget_imdb",
+            "url_imdb",
+            
+            "fr_title_jpbox",
+            "original_title_jpbox",
+            "director_jpbox",
+            "country_jpbox",
+            "category_jpbox",
+            "released_year_jpbox",
+            "date_jpbox",
+            "PEGI_jpbox",
+            "duration_jpbox",
+            "total_entrances_jpbox",
+            "weekly_entrances_jpbox"
+        ]
     }
 
     
     def start_requests(self):
-        """
-        Méthode de démarrage des requêtes. Pour l'instant, elle ne fait rien,
-        mais peut être étendue pour envoyer des requêtes personnalisées.
-        """
-        for url in self.start_urls:
-            yield scrapy.Request(url=url, callback=self.parse) 
+
+        with open("result-entrances.json") as file : 
+            movies = json.load(file) 
+
+        for movie in movies :
+            name = movie["fr_title"]
+            year = int(movie["released_year"])
+            today_year = year+2
+            hours, minutes = [int(i) for i in movie["duration"].replace("min", "").strip().split("h")]
+            duration_mins = (hours*60) + minutes
+            
+            url_search = f"https://www.imdb.com/fr/search/title/?title={name}&title_type=feature&release_date={year},{today_year}&runtime={duration_mins-5},{duration_mins+5}"
         
-    
-    
+            meta = {
+                "fr_title_jpbox" : movie["fr_title"],
+                "original_title_jpbox" : movie["original_title"],
+                "director_jpbox" : movie["director"],
+                "country_jpbox" : movie["country"],
+                "category_jpbox" : movie["category"],
+                "released_year_jpbox" : movie["released_year"],
+                "date_jpbox" : movie["date"],
+                "PEGI_jpbox" : movie["PEGI"],
+                "duration_jpbox" : movie["duration"],
+                "total_entrances_jpbox" : movie["total_entrances"],
+                "weekly_entrances_jpbox" : movie["weekly_entrances"]
+            }
+            
+            
+            yield scrapy.Request(
+                url = url_search,
+                callback = self.parse, 
+                meta=meta
+            )
+            
+        
     def parse(self, response):
-        """
-        Méthode principale pour analyser la page de résultats de recherche.
-        Cette méthode extrait les films listés sur la page de résultats et
-        envoie des requêtes pour récupérer les pages détaillées de chaque film.
-        
-        :param response: L'objet de réponse de la requête HTTP
-        """
-        
-        # Initialisation du sélecteur pour la page de résultats
+    
+        url_movie = response.urljoin(response.css("li.ipc-metadata-list-summary-item > div > div > div > div > div > div > a::attr(href)").get())
         selector = scrapy.selector.Selector(response)
-        
-        # Sélection de la liste des films sur la page
-        list_movies = selector.css(".ipc-metadata-list.ipc-metadata-list--dividers-between.sc-e22973a9-0.khSCXM.detailed-list-view.ipc-metadata-list--base")
-        
-        # Extraction des éléments de film
-        movies = list_movies.css("li.ipc-metadata-list-summary-item")
-        
-        # Parcours de chaque film pour obtenir l'URL de sa page
+        list_movies = selector.css(".ipc-metadata-list.ipc-metadata-list--dividers-between.sc-e22973a9-0.khSCXM.detailed-list-view.ipc-metadata-list--base") 
+        movies = list_movies.css("li.ipc-metadata-list-summary-item") 
+
         for m in movies: 
-            url = m.css("a.ipc-title-link-wrapper::attr(href)").get()
-            url_movie = response.urljoin(url)  # Construction de l'URL complète du film
+            url = m.css("a.ipc-title-link-wrapper::attr(href)").get() 
+            url_movie = response.urljoin(url) 
             
-            # Envoi de la requête pour récupérer la page détaillée du film
-            yield response.follow(url_movie, callback=self.parse_movie_page, meta={"url_movie": url_movie})
+            jpbox_meta = response.meta
             
+            yield response.follow(
+                url_movie, 
+                callback=self.parse_movie_page, 
+                meta={**jpbox_meta, "url_movie": url_movie}
+                )
+        
         
     def parse_movie_page(self, response):
         """
@@ -83,51 +118,63 @@ class MovieSpider(scrapy.Spider):
         :param response: L'objet de réponse de la requête HTTP pour la page du film
         """
         
-        # Extraction du titre original et du titre en français
-        original_title = response.css("span.sc-ec65ba05-1.fUCCIx::text").get()
-        fr_title = response.css("span.hero__primary-text::text").get()
-        if not original_title:  # Si le titre original n'est pas trouvé, on utilise le titre français
-            original_title = fr_title
+        original_title_imdb = response.css("div.sc-ec65ba05-1.fUCCIx::text").get()
+        fr_title_imdb = response.css("span.hero__primary-text::text").get()
+        if original_title_imdb : 
+            original_title_imdb = response.css("div.sc-ec65ba05-1.fUCCIx::text").get().replace("Titre original :", "").strip()
+        else : 
+            original_title_imdb = fr_title_imdb
         
-        # Extraction de l'année de sortie, de la certification, de la durée, etc.
-        release_year = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(1) > a::text").get()
-        certification = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(2) > a::text").get()
-        duration = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(3)::text").get()
-        score = response.css("span.sc-d541859f-1.imUuxf::text").get()
-        metascore = response.css("span.score > span.sc-b0901df4-0::text").get()
-        voters_number = response.css("div.sc-d541859f-3::text").get()
-        description = response.css("span.sc-42125d72-2.mmImo::text").get()
+        release_year_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(1) > a::text").get()
+        certification_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(2) > a::text").get()
+        duration_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(3)::text").get()
+        score_imdb = response.css("span.sc-d541859f-1.imUuxf::text").get()       # target leaking
+        metascore_imdb = response.css("span.score > span.sc-b0901df4-0::text").get()
+        voters_number_imdb = response.css("div.sc-d541859f-3::text").get()
+        description_imdb = response.css("span.sc-42125d72-2.mmImo::text").get()
         
-        # Extraction des genres, des langues, des sociétés de production, etc.
-        categories = response.css("div.ipc-chip-list__scroller > a > span::text").getall()
-        languages = response.css("li[data-testid='title-details-languages'] > div > ul > li > a::text").getall()
-        prod_cies = response.css("li[data-testid='title-details-companies'] > div > ul > li > a::text").getall()
-        countries = response.css("li[data-testid='title-details-origin'] > div > ul > li > a::text").getall()
+        categories_imdb = response.css("div.ipc-chip-list__scroller > a > span::text").getall()
+        languages_imdb = response.css("li[data-testid='title-details-languages'] > div > ul > li > a::text").getall()
+        prod_cies_imdb = response.css("li[data-testid='title-details-companies'] > div > ul > li > a::text").getall()
+        countries_imdb = response.css("li[data-testid='title-details-origin'] > div > ul > li > a::text").getall()
         
-        # Extraction des acteurs, réalisateurs et scénaristes
-        actors = list(set(response.css("div[role='presentation'] > ul > li:nth-child(3) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
-        directors = list(set(response.css("div[role='presentation'] > ul > li:nth-child(1) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
-        writers = list(set(response.css("div[role='presentation'] > ul > li:nth-child(2) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
+        actors_imdb = list(set(response.css("div[role='presentation'] > ul > li:nth-child(3) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
+        directors_imdb = list(set(response.css("div[role='presentation'] > ul > li:nth-child(1) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
+        writers_imdb = list(set(response.css("div[role='presentation'] > ul > li:nth-child(2) > div.ipc-metadata-list-item__content-container > ul[role='presentation'] > li > a::text").getall()))
         
-        # Extraction du budget du film
-        budget = response.css("div[data-testid='title-boxoffice-section'] > ul > li[data-testid='title-boxoffice-budget'] div > ul > li > span::text").get().replace("\u202f", "").replace("\xa0", "").replace("$US (estimé)", "")
+        budget_imdb = response.css("div[data-testid='title-boxoffice-section'] > ul > li[data-testid='title-boxoffice-budget'] div > ul > li > span::text").get()
+        
+        meta_final = response.meta
         
         yield ImdbItem(
-            original_title = original_title,
-            fr_title = fr_title,
-            release_year = release_year,
-            certification = certification,
-            duration = duration,
-            score = score,
-            metascore = metascore,
-            voters_number = voters_number,
-            description = description,
-            categories = categories,
-            languages = languages,
-            prod_cies = prod_cies,
-            countries = countries,
-            actors = actors,
-            directors = directors,
-            writers = writers,
-            budget = budget
+            original_title_imdb = original_title_imdb,
+            fr_title_imdb = fr_title_imdb,
+            release_year_imdb = release_year_imdb,
+            certification_imdb = certification_imdb,
+            duration_imdb = duration_imdb,
+            score_imdb = score_imdb,
+            metascore_imdb = metascore_imdb,
+            voters_number_imdb = voters_number_imdb,
+            description_imdb = description_imdb,
+            categories_imdb = categories_imdb,
+            languages_imdb = languages_imdb,
+            prod_cies_imdb = prod_cies_imdb,
+            countries_imdb = countries_imdb,
+            actors_imdb = actors_imdb,
+            directors_imdb = directors_imdb,
+            writers_imdb = writers_imdb,
+            budget_imdb = budget_imdb,
+            url_imdb = meta_final["url_movie"],
+            
+            fr_title_jpbox = meta_final["fr_title_jpbox"],
+            original_title_jpbox = meta_final["original_title_jpbox"],
+            director_jpbox = meta_final["director_jpbox"],
+            country_jpbox = meta_final["country_jpbox"],
+            category_jpbox = meta_final["category_jpbox"],
+            released_year_jpbox = meta_final["released_year_jpbox"],
+            date_jpbox = meta_final["date_jpbox"],
+            PEGI_jpbox = meta_final["PEGI_jpbox"],
+            duration_jpbox = meta_final["duration_jpbox"],
+            total_entrances_jpbox = meta_final["total_entrances_jpbox"],
+            weekly_entrances_jpbox = meta_final["weekly_entrances_jpbox"],
         )
