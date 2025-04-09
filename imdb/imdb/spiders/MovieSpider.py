@@ -3,6 +3,7 @@ import scrapy.selector
 from imdb.items import ImdbItem
 import json
 import datetime
+import re
 
 
 
@@ -59,13 +60,16 @@ class MovieSpider(scrapy.Spider):
             movies = json.load(file) 
 
         for movie in movies :
-            name = movie["fr_title"]
+            name_complete = movie["fr_title"]
+            name = re.sub(r'\(.*?\)', '', name_complete)
             year = int(movie["released_year"])
-            today_year = year+2
+            today_year = year+1
             hours, minutes = [int(i) for i in movie["duration"].replace("min", "").strip().split("h")]
             duration_mins = (hours*60) + minutes
             
-            url_search = f"https://www.imdb.com/fr/search/title/?title={name}&title_type=feature&release_date={year},{today_year}&runtime={duration_mins-5},{duration_mins+5}"
+            # url_search = f"https://www.imdb.com/fr/search/title/?title={name}&exact=true&&title_type=feature&release_date={year},{today_year}&runtime={duration_mins-3},{duration_mins+3}"
+            
+            url_search = f"https://www.imdb.com/fr/search/title/?title={name}&title_type=feature&release_date={year},{year+1}"
         
             meta = {
                 "fr_title_jpbox" : movie["fr_title"],
@@ -110,13 +114,6 @@ class MovieSpider(scrapy.Spider):
         
         
     def parse_movie_page(self, response):
-        """
-        Méthode pour analyser la page détaillée de chaque film.
-        Elle extrait les informations spécifiques sur chaque film comme 
-        le titre, l'année de sortie, la durée, le score, etc.
-        
-        :param response: L'objet de réponse de la requête HTTP pour la page du film
-        """
         
         original_title_imdb = response.css("div.sc-ec65ba05-1.fUCCIx::text").get()
         fr_title_imdb = response.css("span.hero__primary-text::text").get()
