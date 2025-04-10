@@ -24,9 +24,9 @@ DOWNLOADER_MIDDLEWARES = {
 ROBOTSTXT_OBEY = True
 
 # Configure la concurrence des requêtes (réduit la probabilité d'un blocage)
-CONCURRENT_REQUESTS = 8  # Limiter à 8 requêtes simultanées
-CONCURRENT_REQUESTS_PER_DOMAIN = 4  # Limiter à 4 requêtes simultanées par domaine
-CONCURRENT_REQUESTS_PER_IP = 4  # Limiter à 4 requêtes simultanées par IP
+CONCURRENT_REQUESTS = 32  # Limiter à 8 requêtes simultanées
+CONCURRENT_REQUESTS_PER_DOMAIN = 16  # Limiter à 4 requêtes simultanées par domaine
+CONCURRENT_REQUESTS_PER_IP = 16  # Limiter à 4 requêtes simultanées par IP
 
 # Configure un délai entre les requêtes (ex: 2 secondes)
 # DOWNLOAD_DELAY = 0.5  # Pauser entre chaque requête
