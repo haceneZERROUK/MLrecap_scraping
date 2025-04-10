@@ -29,7 +29,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 4  # Limiter à 4 requêtes simultanées par do
 CONCURRENT_REQUESTS_PER_IP = 4  # Limiter à 4 requêtes simultanées par IP
 
 # Configure un délai entre les requêtes (ex: 2 secondes)
-DOWNLOAD_DELAY = 2  # Pauser entre chaque requête
+# DOWNLOAD_DELAY = 0.5  # Pauser entre chaque requête
 # Activer AutoThrottle pour gérer dynamiquement les délais en fonction de la charge du serveur
 AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 1  # Délai initial de 1 seconde

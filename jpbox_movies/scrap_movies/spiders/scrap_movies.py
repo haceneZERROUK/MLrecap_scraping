@@ -109,11 +109,12 @@ class MoviesSPider(scrapy.Spider):
         
         yield{
 
-        'name': name,
-        'original_name':original_name,
+        'fr_title': name,
+        'original_title':original_name,
         'director': director,
         'country':movie_infos[1],
         'category':movie_infos[5],
+        'released_year': response.css('td.texte_2022titre > h3::text').get().replace("\r\n",'').replace('/', "").strip(), 
         'date': date,
         'PEGI':response.css('table.tablelarge1 div.bloc_infos_center.tablesmall1::text').extract()[-1].strip(),
         'duration':movie_infos[4].strip(),

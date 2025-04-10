@@ -1,15 +1,6 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
-
 import scrapy
-import json
 
-
-
-
-class MoviesSPider(scrapy.Spider):
+class MoviesBudget(scrapy.Spider):
     """
     Spider pour extraire les informations des films à partir du site jpbox-office.com.
     
@@ -18,18 +9,9 @@ class MoviesSPider(scrapy.Spider):
     """
 
 
-    name='moviesscrap'
+    name='moviesbudget'
+    start_urls = ['https://www.jpbox-office.com/budgets.php']
     
-    # start_urls = ['https://www.jpbox-office.com/v9_demarrage.php?view=2']
-    
-
-    # Ouvre le fichier JSON
-    with open('../list_movies.json', 'r', encoding='utf-8') as json_data:
-        d = json.load(json_data)  # Utilise json.load() pour charger directement à partir du fichier
-
-    # Extraction des URLs
-    urls_list = [movie["url_movie"] for movie in d]
-
 
     def parse(self, response):
         """
@@ -44,20 +26,22 @@ class MoviesSPider(scrapy.Spider):
         Ensuite, il suit le lien de la page suivante si disponible.
         """
 
-        for url in self.urls_list:
-
-            link = response.css(url)
+        films = response.css('tr')[2:]
+        for f in films:
+            
+            result_movie = f.css('td.col_poster_contenu_majeur::text').getall()
+            result_income = f.css('td.col_poster_contenu_majeur font::text').getall()
 
             yield{
 
-            'name': link.css('tr > td.texte_2022titre > h1::text').get().strip(),
-            # 'annee': f.css('td.col_poster_contenu  a::text').get()[-4:],
-            # 'weeklyentrance': f.css("td.col_poster_contenu_majeur::text").get(),
-            # 'url_movie' : response.urljoin(f.css('td.col_poster_titre > h3 > a::attr(href)').get())
+            'name': f.css('td.col_poster_titre h3  a::text').get(),
+            'budget': result_movie[0].strip().replace('$', '').replace(' ',''),
+            'income_boxoffice' : result_movie[1].strip().replace('$', '').replace(' ',''),
+            'profit':result_income[0].strip().replace('$', '').replace(' ',''),
+            'profibility':result_income[1].strip().replace('%', '')
             }
 
         next_page = response.css('div.pagination a::attr(href)').extract()[-1]
 
         if next_page is not None :
             yield response.follow(response.urljoin(next_page), callback = self.parse)
-
