@@ -2,18 +2,12 @@ import scrapy
 import scrapy.selector
 from imdb.items import ImdbItem
 import json
-import datetime
 import re
 
 
 
 class MovieSpider(scrapy.Spider):
-    """
-    Spider pour récupérer des informations sur les films à partir d'IMDb.
-    Ce spider parcourt les pages de résultats de recherche de films et récupère
-    des informations détaillées sur chaque film.
-    """
-    
+
     name = "MovieSpider"  # Nom du spider
     allowed_domains = ["www.imdb.com"]  # Domaine autorisé pour les requêtes
     start_urls = ["https://www.imdb.com/fr/search/title/?title_type=feature"]  # URL de départ pour la recherche de films
@@ -49,7 +43,8 @@ class MovieSpider(scrapy.Spider):
             "PEGI_jpbox",
             "duration_jpbox",
             "total_entrances_jpbox",
-            "weekly_entrances_jpbox"
+            "weekly_entrances_jpbox",
+            "duration_mins"
         ]
     }
 
@@ -58,19 +53,19 @@ class MovieSpider(scrapy.Spider):
 
         with open("result-entrances.json") as file : 
             movies = json.load(file) 
+            original_titles = [movie["original_title"] for movie in movies]
+            fr_title = [movie["fr_title"] for movie in movies]
+            
+        # deux condition : si titre original est le meme ou si titre francais est le meme
 
         for movie in movies :
-            name_complete = movie["fr_title"]
-            name = re.sub(r'\(.*?\)', '', name_complete)
-            year = int(movie["released_year"])
-            today_year = year+1
+            name_complete = movie["original_title"]
+            name = re.sub(r'\(.*?\)', '', name_complete).replace(" ", "")
             hours, minutes = [int(i) for i in movie["duration"].replace("min", "").strip().split("h")]
             duration_mins = (hours*60) + minutes
             
-            # url_search = f"https://www.imdb.com/fr/search/title/?title={name}&exact=true&&title_type=feature&release_date={year},{today_year}&runtime={duration_mins-3},{duration_mins+3}"
+            url_search = f"https://www.imdb.com/fr/find/?q={name}&s=tt&ttype=ft&ref_=fn_ttl_pop"
             
-            url_search = f"https://www.imdb.com/fr/search/title/?title={name}&title_type=feature&release_date={year},{year+1}"
-        
             meta = {
                 "fr_title_jpbox" : movie["fr_title"],
                 "original_title_jpbox" : movie["original_title"],
@@ -82,36 +77,40 @@ class MovieSpider(scrapy.Spider):
                 "PEGI_jpbox" : movie["PEGI"],
                 "duration_jpbox" : movie["duration"],
                 "total_entrances_jpbox" : movie["total_entrances"],
-                "weekly_entrances_jpbox" : movie["weekly_entrances"]
+                "weekly_entrances_jpbox" : movie["weekly_entrances"], 
+                "duration_mins" : duration_mins
             }
-            
-            
+                        
             yield scrapy.Request(
                 url = url_search,
                 callback = self.parse, 
                 meta=meta
             )
             
+            
+    def parse(self, response) :
         
-    def parse(self, response):
-    
-        url_movie = response.urljoin(response.css("li.ipc-metadata-list-summary-item > div > div > div > div > div > div > a::attr(href)").get())
-        selector = scrapy.selector.Selector(response)
-        list_movies = selector.css(".ipc-metadata-list.ipc-metadata-list--dividers-between.sc-e22973a9-0.khSCXM.detailed-list-view.ipc-metadata-list--base") 
-        movies = list_movies.css("li.ipc-metadata-list-summary-item") 
+        released_year_jpbox = response.meta["released_year_jpbox"]
+        list_results = response.css("div.sc-b03627f1-2.gWHDBT > ul > li")
 
-        for m in movies: 
-            url = m.css("a.ipc-title-link-wrapper::attr(href)").get() 
-            url_movie = response.urljoin(url) 
+        for r in list_results : 
+            released_year_imdb = r.css("div.ipc-metadata-list-summary-item__c > div.ipc-metadata-list-summary-item__tc > ul.ipc-metadata-list-summary-item__tl > li > span::text").get()
+            url_movie = response.urljoin(r.css("div.ipc-metadata-list-summary-item__c > div > a::attr('href')").get())
             
-            jpbox_meta = response.meta
-            
-            yield response.follow(
-                url_movie, 
-                callback=self.parse_movie_page, 
-                meta={**jpbox_meta, "url_movie": url_movie}
-                )
-        
+            if released_year_imdb == released_year_jpbox : 
+                # # debug 
+                # print("#########################")
+                # print(released_year_jpbox)
+                # print(released_year_imdb)
+                # print(url_movie)
+                # print("#########################")
+
+                yield scrapy.Request(
+                    url = url_movie, 
+                    callback = self.parse_movie_page, 
+                    meta = {**response.meta, "url_movie_imdb": url_movie}
+                ) 
+
         
     def parse_movie_page(self, response):
         
@@ -161,8 +160,7 @@ class MovieSpider(scrapy.Spider):
             directors_imdb = directors_imdb,
             writers_imdb = writers_imdb,
             budget_imdb = budget_imdb,
-            url_imdb = meta_final["url_movie"],
-            
+            url_imdb = meta_final["url_movie_imdb"],
             fr_title_jpbox = meta_final["fr_title_jpbox"],
             original_title_jpbox = meta_final["original_title_jpbox"],
             director_jpbox = meta_final["director_jpbox"],
@@ -174,4 +172,5 @@ class MovieSpider(scrapy.Spider):
             duration_jpbox = meta_final["duration_jpbox"],
             total_entrances_jpbox = meta_final["total_entrances_jpbox"],
             weekly_entrances_jpbox = meta_final["weekly_entrances_jpbox"],
+            duration_mins = meta_final["duration_mins"]
         )
