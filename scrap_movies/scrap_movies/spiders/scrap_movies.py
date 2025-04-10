@@ -119,4 +119,5 @@ class MoviesSPider(scrapy.Spider):
         'duration':movie_infos[4].strip(),
         'total_entrances': data_result_clean[0],
         'weekly_entrances': data_result_clean[-1]
+
         }
