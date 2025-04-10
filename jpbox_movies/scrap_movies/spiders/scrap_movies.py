@@ -105,15 +105,18 @@ class MoviesSPider(scrapy.Spider):
                             .replace('<tdclass=\"col_poster_contenu_majeur\">', '') for clean_data in data_result]
 
         movie_infos =  response.css('table.table_2022titre td.texte_2022titre h3 ::text').extract()
-        
+        movie_infos_2 = response.css('td.texte_2022titre a::text').getall()
+        if len(movie_infos) > 8:
+            cat_movie = movie_infos[5]
+        else:
+            cat_movie = movie_infos_2[-1]
         
         yield{
 
         'fr_title': name,
         'original_title':original_name,
-        'director': director,
         'country':movie_infos[1],
-        'category':movie_infos[5],
+        'category': cat_movie,
         'released_year': response.css('td.texte_2022titre > h3::text').get().replace("\r\n",'').replace('/', "").strip(), 
         'date': date,
         'PEGI':response.css('table.tablelarge1 div.bloc_infos_center.tablesmall1::text').extract()[-1].strip(),

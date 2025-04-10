@@ -38,7 +38,7 @@ class MoviesBudget(scrapy.Spider):
             'budget': result_movie[0].strip().replace('$', '').replace(' ',''),
             'income_boxoffice' : result_movie[1].strip().replace('$', '').replace(' ',''),
             'profit':result_income[0].strip().replace('$', '').replace(' ',''),
-            'profibility':result_income[1].strip().replace('%', '')
+            'profitability':result_income[1].strip().replace('%', '')
             }
 
         next_page = response.css('div.pagination a::attr(href)').extract()[-1]
