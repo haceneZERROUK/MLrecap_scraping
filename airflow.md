@@ -438,3 +438,21 @@ with DAG(
 - [📘 Apache Airflow Documentation](https://airflow.apache.org/docs/)
 - [📘 Azure Airflow on VM Guide](https://learn.microsoft.com/fr-fr/azure/container-instances/container-instances-airflow)
 
+
+
+
+LAncer le dag:
+
+```bash
+docker-compose down --volumes --remove-orphans
+docker-compose up --build
+```
+
+tester le code dans un shell:
+
+```bash
+docker exec -it airflow-webserver-1 bash 
+````
+```bash
+python3 run_spider.py
+````
