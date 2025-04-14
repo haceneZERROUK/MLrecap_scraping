@@ -20,11 +20,14 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
     depends_on:
       - postgres
-    command: webserver
+    command: >
+      bash -c "pip install -r /requirements.txt && airflow webserver"
 
   scheduler:
     image: apache/airflow:2.9.1-python3.10
@@ -35,9 +38,12 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./requirements.txt:/requirements.txt
     depends_on:
       - webserver
-    command: scheduler
+    command: >
+      bash -c "pip install -r /requirements.txt && airflow scheduler"
 
   airflow-init:
     image: apache/airflow:2.9.1-python3.10
@@ -52,8 +58,11 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./requirements.txt:/requirements.txt
     entrypoint: >
       bash -c "
+      pip install -r /requirements.txt &&
       airflow db migrate &&
       airflow users create --username airflow --password airflow --firstname Khadija --lastname Aassi --role Admin --email khadija@example.com
       "
