@@ -21,6 +21,8 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./run_spider.py:/opt/airflow/run_spider.py
+      - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
@@ -34,11 +36,15 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'fernet_key_dev_123'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./run_spider.py:/opt/airflow/run_spider.py
+      - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
     depends_on:
       - webserver
@@ -59,6 +65,8 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./allocine_affiche:/opt/airflow/allocine_affiche
+      - ./run_spider.py:/opt/airflow/run_spider.py
+      - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
     entrypoint: >
       bash -c "
@@ -69,3 +77,4 @@ services:
 
 volumes:
   postgres-db-volume:
+  

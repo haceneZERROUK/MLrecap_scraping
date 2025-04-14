@@ -123,8 +123,8 @@ Tu dois avoir ces outils installés :
 Ouvre ton terminal :
 
 ```bash
-mkdir airflow-local
-cd airflow-local
+mkdir airflow
+cd airflow
 mkdir dags logs plugins
 ```
 
@@ -136,7 +136,7 @@ mkdir dags logs plugins
 
 ### 🧾 Étape 2 – Créer le fichier `docker-compose.yml`
 
-Toujours dans le dossier `airflow-local`, crée un fichier :
+Toujours dans le dossier `airflow`, crée un fichier :
 ```bash
 touch docker-compose.yml
 ```
@@ -455,4 +455,10 @@ docker exec -it airflow-webserver-1 bash
 ````
 ```bash
 python3 run_spider.py
+````
+
+
+test bash,:
+```bash
+airflow tasks test allocine_affiche_dag scrape_affiche 2025-04-14
 ````
