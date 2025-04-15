@@ -117,7 +117,30 @@ class JpboxWithAllocineTitles(scrapy.Item) :
     jpbox_synopsis = scrapy.Field()
     
     
-    
+class ItemImdbComplement(scrapy.Item) : 
+    jpbox_fr_title = scrapy.Field()
+    allocine_fr_title = scrapy.Field()
+    jpbox_released_year = scrapy.Field()
+    jpbox_actors = scrapy.Field()
+    jpbox_directors = scrapy.Field()
+    allocine_writer = scrapy.Field()
+    allocine_distribution = scrapy.Field()
+    jpbox_country = scrapy.Field()
+    jpbox_budget = scrapy.Field()
+    jpbox_category = scrapy.Field()
+    jpbox_released_date = scrapy.Field()
+    allocine_classification = scrapy.Field()
+    jpbox_duration = scrapy.Field()
+    jpbox_weekly_entrances = scrapy.Field()
+    duration_minutes = scrapy.Field()
+    imdb_url = scrapy.Field()
+    imdb_title = scrapy.Field()
+    imdb_released_year = scrapy.Field()
+    imdb_directors = scrapy.Field()
+    imdb_writer = scrapy.Field()
+    imdb_actors = scrapy.Field()
+    imdb_distribution = scrapy.Field()
+    imdb_budget = scrapy.Field()
 
 
 
