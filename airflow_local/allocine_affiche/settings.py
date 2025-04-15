@@ -15,12 +15,10 @@ ITEM_PIPELINES = {
    # Vous pouvez ajouter des pipelines personnalisés ici
 }
 
-# Paramètres d'exportation des données
 FEEDS = {
-    '/opt/airflow/data/films_%(time)s.json': {
+    '/opt/airflow/data/films.json': {
         'format': 'json',
         'encoding': 'utf8',
-        'store_empty': False,
         'overwrite': True,
     }
 }

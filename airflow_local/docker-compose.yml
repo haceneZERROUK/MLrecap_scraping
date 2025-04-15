@@ -23,6 +23,7 @@ services:
       - ./allocine_affiche:/opt/airflow/allocine_affiche
       - ./run_spider.py:/opt/airflow/run_spider.py
       - ./data:/opt/airflow/data
+      - ./scrapy.cfg:/opt/airflow/scrapy.cfg
       - ./requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
@@ -45,6 +46,7 @@ services:
       - ./allocine_affiche:/opt/airflow/allocine_affiche
       - ./run_spider.py:/opt/airflow/run_spider.py
       - ./data:/opt/airflow/data
+      - ./scrapy.cfg:/opt/airflow/scrapy.cfg
       - ./requirements.txt:/requirements.txt
     depends_on:
       - webserver
@@ -67,6 +69,7 @@ services:
       - ./allocine_affiche:/opt/airflow/allocine_affiche
       - ./run_spider.py:/opt/airflow/run_spider.py
       - ./data:/opt/airflow/data
+      - ./scrapy.cfg:/opt/airflow/scrapy.cfg
       - ./requirements.txt:/requirements.txt
     entrypoint: >
       bash -c "

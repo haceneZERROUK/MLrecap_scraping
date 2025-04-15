@@ -6,15 +6,23 @@ class FilmsAfficheSpider(scrapy.Spider):
     start_urls = ['https://www.allocine.fr/film/sorties-semaine/']
     
     custom_settings = {
-        'ROBOTSTXT_OBEY': False,
-        'USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
-    }
+            'FEEDS': {
+                '/opt/airflow/data/films.json': {
+                    'format': 'json',
+                    'encoding': 'utf8',
+                    'overwrite': True,
+                }
+            },
+            'ROBOTSTXT_OBEY': False,
+            'USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+        }
+    
 
     def parse(self, response):
         self.logger.info(f"Parsing: {response.url}")
         
         try:
-            films = response.css('li.mdl')  # chaque film est dans un <li class="mdl">
+            films = response.css('li.mdl')
             self.logger.info(f"Nombre de films trouvés: {len(films)}")
             
             for film in films:
