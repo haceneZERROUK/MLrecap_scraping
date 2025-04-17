@@ -3,7 +3,7 @@ import sys
 import logging
 from scrapy.utils.log import configure_logging
 
-# Global logger setup
+# Configuration globale du logger
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -14,39 +14,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Ensure project root and data directory exist
+# Assure que le chemin de base du projet est dans sys.path
 base_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_path)
 
+# Assure que le dossier data existe
 data_dir = os.path.join(base_path, 'data')
 os.makedirs(data_dir, exist_ok=True)
-logger.info(f"Data directory: {data_dir}")
+logger.info(f"Dossier data : {data_dir}")
 
 def run():
     """
-    Configure Scrapy logging and start the UpcomesSpider.
-    Returns True on success, False otherwise.
+    Configure le logging de Scrapy et lance le spider UpcomesSpider.
+
+    Retourne True si l'exécution se termine sans erreur, False sinon.
     """
+    # Désactive l'installation du handler de logs par défaut de Scrapy
     configure_logging(install_root_handler=False)
+    # Empêche la propagation des logs Scrapy vers d'autres handlers
     logging.getLogger('scrapy').propagate = False
 
     try:
-        logger.info(">>> Starting Allociné spider")
+        logger.info(">>> Démarrage du spider Allociné")
         from scrapy.crawler import CrawlerProcess
         from scrapy.utils.project import get_project_settings
         from upcoming.upcoming.spiders.upcomes import UpcomesSpider
 
+        # Récupère les settings du projet et désactive le logging interne
         settings = get_project_settings()
         settings.set('LOG_ENABLED', False)
 
+        # Lance le crawler
         process = CrawlerProcess(settings)
         process.crawl(UpcomesSpider)
         process.start()
 
-        logger.info(">>> Spider finished successfully")
+        logger.info(">>> Spider terminé avec succès")
         return True
     except Exception as e:
-        logger.error(f">>> Spider error: {e}")
+        logger.error(f">>> Erreur du spider : {e}")
         return False
 
 if __name__ == "__main__":
