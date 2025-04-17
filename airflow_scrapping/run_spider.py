@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from datetime import datetime
+# from datetime import datetime
 
 # Configuration des logs
 logging.basicConfig(
@@ -33,14 +33,14 @@ def run():
         # Importer à l'intérieur de la fonction pour éviter les problèmes de chemin
         from scrapy.crawler import CrawlerProcess
         from scrapy.utils.project import get_project_settings
-        from allocine_affiche.spiders.films_affiche import FilmsAfficheSpider
+        from upcoming.upcoming.spiders.upcomes import UpcomesSpider
         
         # Obtenir les paramètres du projet et créer le processus
         settings = get_project_settings()
         process = CrawlerProcess(settings)
         
         # Lancer le spider
-        process.crawl(FilmsAfficheSpider)
+        process.crawl(UpcomesSpider)
         process.start()
         
         logger.info(">>> Fin de l'exécution avec succès")
