@@ -1,9 +1,9 @@
 import os
 import sys
 import logging
-# from datetime import datetime
+from scrapy.utils.log import configure_logging
 
-# Configuration des logs
+# Global logger setup
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -12,41 +12,41 @@ logging.basicConfig(
         logging.FileHandler('/opt/airflow/logs/spider_run.log')
     ]
 )
-
 logger = logging.getLogger(__name__)
 
-# Ajouter le répertoire de base au chemin Python
+# Ensure project root and data directory exist
 base_path = os.path.dirname(os.path.abspath(__file__))
-if base_path not in sys.path:
-    sys.path.insert(0, base_path)
+sys.path.insert(0, base_path)
 
-# Assurer que le répertoire data existe
 data_dir = os.path.join(base_path, 'data')
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
-    logger.info(f"Répertoire data créé: {data_dir}")
+os.makedirs(data_dir, exist_ok=True)
+logger.info(f"Data directory: {data_dir}")
 
 def run():
+    """
+    Configure Scrapy logging and start the UpcomesSpider.
+    Returns True on success, False otherwise.
+    """
+    configure_logging(install_root_handler=False)
+    logging.getLogger('scrapy').propagate = False
+
     try:
-        logger.info(">>> Début de l'exécution du spider AlloCiné")
-        
-        # Importer à l'intérieur de la fonction pour éviter les problèmes de chemin
+        logger.info(">>> Starting Allociné spider")
         from scrapy.crawler import CrawlerProcess
         from scrapy.utils.project import get_project_settings
         from upcoming.upcoming.spiders.upcomes import UpcomesSpider
-        
-        # Obtenir les paramètres du projet et créer le processus
+
         settings = get_project_settings()
+        settings.set('LOG_ENABLED', False)
+
         process = CrawlerProcess(settings)
-        
-        # Lancer le spider
         process.crawl(UpcomesSpider)
         process.start()
-        
-        logger.info(">>> Fin de l'exécution avec succès")
+
+        logger.info(">>> Spider finished successfully")
         return True
     except Exception as e:
-        logger.error(f">>> Erreur lors de l'exécution du spider: {str(e)}")
+        logger.error(f">>> Spider error: {e}")
         return False
 
 if __name__ == "__main__":

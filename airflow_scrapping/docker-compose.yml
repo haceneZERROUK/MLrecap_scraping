@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:13
@@ -69,11 +71,12 @@ services:
       - ./run_spider.py:/opt/airflow/run_spider.py
     entrypoint: >
       bash -c "
-      pip install -r /requirements.txt &&
-      airflow db migrate &&
-      airflow users create --username airflow --password airflow --firstname Khadija --lastname Aassi --role Admin --email khadija@example.com
+        pip install -r /requirements.txt &&
+        airflow db migrate &&
+        airflow users create --username airflow --password airflow \
+          --firstname Khadija --lastname Aassi --role Admin \
+          --email khadija@example.com
       "
 
 volumes:
   postgres-db-volume:
-  
