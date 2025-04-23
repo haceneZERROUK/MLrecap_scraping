@@ -13,10 +13,10 @@ services:
   webserver:
     image: apache/airflow:2.9.1-python3.10
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: 'fernet_key_dev_123'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTOR : LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN : postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY : 'fernet_key_dev_123'
+      AIRFLOW__CORE__LOAD_EXAMPLES : 'false'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
@@ -35,14 +35,14 @@ services:
   scheduler:
     image: apache/airflow:2.9.1-python3.10
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: 'fernet_key_dev_123'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTOR : LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN : postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY : 'fernet_key_dev_123'
+      AIRFLOW__CORE__LOAD_EXAMPLES : 'false'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
-      - ./logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logsd
       - ./plugins:/opt/airflow/plugins
       - ./upcoming:/opt/airflow/upcoming
       - ./requirements.txt:/requirements.txt
@@ -57,10 +57,10 @@ services:
     depends_on:
       - postgres
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: 'fernet_key_dev_123'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTOR : LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN : postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY : 'fernet_key_dev_123'
+      AIRFLOW__CORE__LOAD_EXAMPLES : 'false'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
@@ -74,8 +74,8 @@ services:
         pip install -r /requirements.txt &&
         airflow db migrate &&
         airflow users create --username airflow --password airflow \
-          --firstname Khadija --lastname Aassi --role Admin \
-          --email khadija@example.com
+          --firstname admin --lastname user --role Admin \
+          --email admin@example.com
       "
 
 volumes:

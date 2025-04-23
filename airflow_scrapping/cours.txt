@@ -1,0 +1,6 @@
+az acr login --name groupe2allocine                                                                 # pour me login à mon compte ACR
+docker build -t image_appli_fast_api .                                                                  # il faut buils l'image en local auparavant
+docker tag image_appli_fast_api groupe2allocine.azurecr.io/fastapi-app:latest                        # Taguer l'image Docker pour la pousser vers le registre (ACR)
+docker push groupe2allocine.azurecr.io/fastapi-app:latest                                            # pousser l'image sur l'Azure Container Registry
+az login                                                                                             # se connecter a azure
+az acr login --name groupe2allocine                                                                  # se connecter a mon ACR (Azure Container Registry)

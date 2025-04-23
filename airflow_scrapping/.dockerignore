@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+logs/
+postgres-data/
+.dockerignore
+docker-compose.yml

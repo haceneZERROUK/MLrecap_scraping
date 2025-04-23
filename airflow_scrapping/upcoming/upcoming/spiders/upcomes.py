@@ -83,7 +83,7 @@ class UpcomesSpider(scrapy.Spider):
 
         # Director & Writer (both under .meta-body-direction)
         crew = response.css("div.meta-body-direction span.dark-grey-link::text").getall() or []
-        director = crew[0] if crew else "unknown"
+        directors = crew[0] if crew else "unknown"
         writer = crew[-1] if crew else "unknown"
 
         # Distribution, Country, Category
@@ -134,7 +134,7 @@ class UpcomesSpider(scrapy.Spider):
             actor_1=actor_1,
             actor_2=actor_2,
             actor_3=actor_3,
-            director=director,
+            directors=directors,
             writer=writer,
             distribution=distribution,
             country=country,

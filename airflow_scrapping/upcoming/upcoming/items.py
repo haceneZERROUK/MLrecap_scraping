@@ -14,7 +14,7 @@ class UpcomingItem(scrapy.Item):
     actor_1 = scrapy.Field() 
     actor_2 = scrapy.Field() 
     actor_3 = scrapy.Field() 
-    director = scrapy.Field() 
+    directors = scrapy.Field() 
     writer = scrapy.Field() 
     distribution = scrapy.Field() 
     country = scrapy.Field() 
