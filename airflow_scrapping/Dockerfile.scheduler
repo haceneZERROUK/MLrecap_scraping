@@ -1,0 +1,15 @@
+FROM apache/airflow:2.9.1-python3.10
+
+WORKDIR /opt/airflow
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./dags ./dags
+COPY ./data ./data
+RUN mkdir -p ./logs
+RUN mkdir -p ./plugins
+COPY ./upcoming ./upcoming
+COPY ./run_spider.py ./run_spider.py
+
+CMD ["scheduler"]
