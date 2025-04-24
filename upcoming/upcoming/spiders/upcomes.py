@@ -21,10 +21,6 @@ class UpcomesSpider(scrapy.Spider):
 
         allocine_upcoming = f"https://www.allocine.fr/film/agenda/sem-{self.next_wednesday.strftime('%Y-%m-%d')}/"
 
-        print("allocine_upcoming ######################")
-        print(allocine_upcoming)
-        print("DEBUG ######################")
-        
         yield scrapy.Request(
             url = allocine_upcoming,
             callback = self.parse_allocine_upcoming
@@ -38,18 +34,13 @@ class UpcomesSpider(scrapy.Spider):
             movies = response.css("li.mdl")
         if not movies:
             movies = response.css("div.card-entity-list div.card")
-        print("Nombre de films ######################")
-        print(len(movies))
-        print(" ######################")
                             
         for m in movies :
             
             movie_url = response.urljoin(m.css("div.card.entity-card div.meta h2.meta-title a.meta-title-link::attr('href')").get())
-            image_url = m.css("div.entity-card-list figure.thumbnail span.thumbnail-link img.thumbnail-img::attr('src')").get()
             synopsis = m.css("div.content-txt::text").get()
             
             meta = {
-                "image_url" : image_url,
                 "synopsis" : synopsis
             }
 
@@ -117,11 +108,16 @@ class UpcomesSpider(scrapy.Spider):
             duration = "1h 00min"           # OK
             duration_minutes = 60           # OK
 
-        if not response.meta["image_url"] : 
-            image_url = response.css("div.entity-card-player-ovw figure.thumbnail span img.thumbnail-img::attr('src')").get()
+        image_url_scrap = response.css("div.entity-card-player-ovw figure.thumbnail span img.thumbnail-img::attr('src')").get()
+        if image_url_scrap : 
+            image_url = image_url_scrap
+        else : 
+            image_url = response.css("div.entity-card-overview figure span img::attr('src')").get()
             
         if not response.meta["synopsis"] : 
-            synopsis = response.css("section.ovw-synopsis div.content-txt p.bo-p::text").get()
+            synopsis = response.css("section.ovw-synopsis div.content-txt p.bo-p::text").get().strip()
+        else : 
+            synopsis = response.meta["synopsis"].strip()
 
         yield UpcomingItem(
             fr_title = fr_title,                        # OK
