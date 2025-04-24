@@ -4,3 +4,60 @@ docker tag image_appli_fast_api groupe2allocine.azurecr.io/fastapi-app:latest   
 docker push groupe2allocine.azurecr.io/fastapi-app:latest                                            # pousser l'image sur l'Azure Container Registry
 az login                                                                                             # se connecter a azure
 az acr login --name groupe2allocine                                                                  # se connecter a mon ACR (Azure Container Registry)
+
+
+
+#################################
+
+# build l'image du serveur
+docker build -t server_test -f Dockerfile.webserver .
+
+# build l'image du scheduler
+docker build -t scheduler_test -f Dockerfile.scheduler .
+
+# build l'image du init
+docker build -t init_test -f Dockerfile.airflow-init .
+
+
+#################################
+
+# reseau
+docker network create airflow-network
+
+# volumes des dossiers    --> pour azure le volume  de montage se fera sur Azure Blob Fuse  ###############
+docker volume create pgdata
+docker volume create airflow-dags
+docker volume create airflow-logs
+docker volume create airflow-plugins
+docker volume create airflow-data
+docker volume create airflow-upcoming
+
+# db postgres
+docker run -d --name bdd_postgres --env-file .env_postgres --network airflow-network -v pgdata:/var/lib/postgresql/data postgres:latest
+
+# airflow init
+docker run -d --name airflow_init --env-file .env --network airflow-network \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  init_test:latest
+
+# scheduler
+docker run -d --name airflow_scheduler --env-file .env --network airflow-network \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  scheduler_test:latest
+
+# webserver
+docker run -d --name airflow_webserver --env-file .env --network airflow-network -p 8080:8080 \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  server_test:latest

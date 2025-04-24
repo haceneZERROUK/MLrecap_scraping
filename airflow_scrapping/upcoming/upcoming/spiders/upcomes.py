@@ -2,7 +2,7 @@ import scrapy
 from datetime import date, timedelta, datetime
 import re
 import json
-from upcoming.upcoming.items import UpcomingItem
+from upcoming.items import UpcomingItem
 
 
 FRENCH_MONTHS = {
@@ -17,7 +17,7 @@ class UpcomesSpider(scrapy.Spider):
 
     custom_settings = {
             'FEEDS': {
-                '/opt/airflow/data/films.json': {
+                './data/films.json': {
                     'format': 'json',
                     'encoding': 'utf8',
                     'overwrite': True,

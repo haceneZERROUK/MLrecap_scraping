@@ -92,7 +92,7 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
 FEEDS = {
-    '/opt/airflow/data/films.json': {
+    './data/films.json': {
         'format': 'json',
         'encoding': 'utf8',
         'overwrite': True,
