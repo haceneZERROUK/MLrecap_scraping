@@ -2,7 +2,7 @@ import scrapy
 from datetime import date, timedelta, datetime
 import re
 import json
-from upcoming.items import UpcomingItem
+from upcoming.upcoming.items import UpcomingItem
 
 
 FRENCH_MONTHS = {
