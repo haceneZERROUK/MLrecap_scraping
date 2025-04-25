@@ -93,3 +93,13 @@ creer le deploy.sh pour déployer
 #################
 
 az container logs --resource-group kaassiRG --name airflow-instance
+
+
+
+docker tag init_test mboumedineregistry.azurecr.io/airflow-init:latest
+docker tag scheduler_test mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker tag server_test mboumedineregistry.azurecr.io/airflow-webserver:latest
+
+docker push mboumedineregistry.azurecr.io/airflow-init:latest
+docker push mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker push mboumedineregistry.azurecr.io/airflow-webserver:latest
