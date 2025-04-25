@@ -10,8 +10,8 @@ DNS_LABEL="airflowappdemo"  # doit être unique sur Azure
 DOCKER_COMPOSE_FILE="docker-compose.yml"      # Nom de votre fichier docker-compose
 WEB_IMAGE_NAME="webserver"
 SCHEDULER_IMAGE_NAME="scheduler"
-INIT_IMAGE_NAME="init"
-POSTGRES_IMAGE="postgres:13"  # depuis Docker Hub
+INIT_IMAGE_NAME="airflow-init"
+POSTGRES_IMAGE="postgres"
 
 # Charger les variables depuis .env si nécessaire
 # . ./.env
@@ -26,26 +26,41 @@ REGISTRY_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0
 echo "Suppression de l'ancien groupe de conteneurs s'il existe..."
 az container delete --resource-group $RESOURCE_GROUP --name $CONTAINER_GROUP_NAME --yes || true
 
-# Build des images
-echo "Construction des images Docker Airflow..."
-docker build -t $WEB_IMAGE_NAME -f Dockerfile.webserver .
-docker build -t $SCHEDULER_IMAGE_NAME -f Dockerfile.scheduler .
-docker build -t $INIT_IMAGE_NAME -f Dockerfile.init .
-docker pull $POSTGRES_IMAGE  # Assurez-vous que l'image Postgres est disponible
+echo "📦 Build & push des images…"
+# Ici on part du principe que vous utilisez l'image officielle Airflow
+docker pull apache/airflow:2.9.1-python3.10
+for svc in webserver scheduler airflow-init; do
+  docker tag apache/airflow:2.9.1-python3.10 \
+    "${ACR_NAME}.azurecr.io/${svc}:latest"
+  docker push "${ACR_NAME}.azurecr.io/${svc}:latest"
+done
 
-# Tag
-echo "Tag des images..."
-docker tag $WEB_IMAGE_NAME $ACR_NAME.azurecr.io/$WEB_IMAGE_NAME:latest
-docker tag $SCHEDULER_IMAGE_NAME $ACR_NAME.azurecr.io/$SCHEDULER_IMAGE_NAME:latest
-docker tag $INIT_IMAGE_NAME $ACR_NAME.azurecr.io/$INIT_IMAGE_NAME:latest
-docker tag $POSTGRES_IMAGE $ACR_NAME.azurecr.io/$POSTGRES_IMAGE
+# Postgres dans votre ACR
+docker pull postgres:13
+docker tag postgres:13 "${ACR_NAME}.azurecr.io/postgres:latest"
+docker push "${ACR_NAME}.azurecr.io/postgres:latest"
 
-# Push
-echo "Push des images vers ACR..."
-docker push $ACR_NAME.azurecr.io/$WEB_IMAGE_NAME:latest
-docker push $ACR_NAME.azurecr.io/$SCHEDULER_IMAGE_NAME:latest
-docker push $ACR_NAME.azurecr.io/$INIT_IMAGE_NAME:latest
-docker push $ACR_NAME.azurecr.io/$POSTGRES_IMAGE
+# # Build des images
+# echo "Construction des images Docker Airflow..."
+# # docker build -t $WEB_IMAGE_NAME -f Dockerfile.webserver .
+# # docker build -t $SCHEDULER_IMAGE_NAME -f Dockerfile.scheduler .
+# # docker build -t $INIT_IMAGE_NAME -f Dockerfile.airflow-init .
+# # docker pull $POSTGRES_IMAGE  # Assurez-vous que l'image Postgres est disponible
+# docker-compose -f $DOCKER_COMPOSE_FILE build  # Si vous utilisez docker-compose
+
+# # Tag
+# echo "Tag des images..."
+# docker tag $WEB_IMAGE_NAME $ACR_NAME.azurecr.io/$WEB_IMAGE_NAME:latest
+# docker tag $SCHEDULER_IMAGE_NAME $ACR_NAME.azurecr.io/$SCHEDULER_IMAGE_NAME:latest
+# docker tag $INIT_IMAGE_NAME $ACR_NAME.azurecr.io/$INIT_IMAGE_NAME:latest
+# docker tag $POSTGRES_IMAGE $ACR_NAME.azurecr.io/$POSTGRES_IMAGE:latest
+
+# # Push
+# echo "Push des images vers ACR..."
+# docker push $ACR_NAME.azurecr.io/$WEB_IMAGE_NAME:latest
+# docker push $ACR_NAME.azurecr.io/$SCHEDULER_IMAGE_NAME:latest
+# docker push $ACR_NAME.azurecr.io/$INIT_IMAGE_NAME:latest
+# docker push $ACR_NAME.azurecr.io/$POSTGRES_IMAGE:latest
 
 # YAML dynamique pour ACI
 echo "Création du fichier aci-deploy.yaml..."
@@ -91,7 +106,7 @@ properties:
         value: "false"
   - name: postgres
     properties:
-      image: ${POSTGRES_IMAGE}
+      image: ${ACR_NAME}.azurecr.io/${POSTGRES_IMAGE}:latest
       resources:
         requests:
           cpu: 1
