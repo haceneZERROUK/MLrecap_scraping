@@ -1,35 +1,15 @@
 import os
 from scrapy.cmdline import execute
-from azure.identity import ClientSecretCredential
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 
 
-dotenv_path = "upcoming/.env"
+dotenv_path = ".env"
 load_dotenv(dotenv_path=dotenv_path)
-
-AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID", None)
-AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID", None)
-AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", None)
-AZURE_VAULT_URL = os.getenv("AZURE_VAULT_URL", None)
-AZURE_STORAGE_URL = os.getenv("AZURE_STORAGE_URL", None)
-
-
-# credentials = ClientSecretCredential(
-#     client_id = AZURE_CLIENT_ID, 
-#     tenant_id = AZURE_TENANT_ID, 
-#     client_secret = AZURE_CLIENT_SECRET, 
-#     account_url = AZURE_VAULT_URL
-# )
-
-
-# def save_data_to_blob() : 
-#     pass
-
-
+# load_dotenv()
 
 spider = "upcomes"
-fichier_sortie = "upcomes"
+saving_file = os.getenv("saving_file")
 
 try:
     
@@ -39,10 +19,8 @@ try:
         'scrapy',
         'crawl',
         spider,
-        '-o',
-        f'{fichier_sortie}.csv',
         '-o', 
-        f'{fichier_sortie}.json'
+        f'{saving_file}.json'
     ])
     
 except SystemExit as e:
@@ -50,3 +28,26 @@ except SystemExit as e:
     pass
 
 print(f"\nExtraction {spider} finish.\n")
+
+
+##########################################
+
+# enregistrement dans le blob
+
+account_name = os.getenv("ACCOUNT_NAME")
+account_key = os.getenv("ACCOUNT_KEY")
+container_name = os.getenv("CONTAINER_NAME")
+
+# Création du service d'accès aux blobs
+blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+
+# blob de destination
+blob_client = blob_service_client.get_blob_client(container=container_name,blob=saving_file + ".json")
+
+# Ouvre le fichier local et upload-le dans le blob
+local_file_path = f"{saving_file}.json"
+
+with open(local_file_path, "rb") as data:
+    blob_client.upload_blob(data, overwrite=True)
+    print(f"Fichier {local_file_path} uploadé dans le blob Azure '{container_name}'.")
+
