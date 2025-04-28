@@ -1,19 +1,19 @@
 #!/bin/bash
 
+# Récupération des variables d'environnement
+source .env
+
 # Variables
 RESOURCE_GROUP="mboumedineRG"              # Nom du groupe de ressources existant
-SERVER_NAME="groupe2-server"               # Nom du serveur PostgreSQL
+SERVER_NAME=$SERVER_NAME                # Nom du serveur PostgreSQL
 LOCATION="France Central"                  # Région Azure
-SKU_NAME="standard_d96ds_v5"               # SKU pour le serveur PostgreSQL (inclut la taille de calcul)
+SKU_NAME="standard_d2s_v3"                 # SKU pour le serveur PostgreSQL (inclut la taille de calcul)
 TIER="Burstable"                           # Niveau de service
 STORAGE_SIZE=32                            # Taille du stockage en GiB
 STORAGE_TYPE="Premium_LRS"                 # Type de stockage
 PERFORMANCE_TIER="p4"                      # Niveau de performance du stockage
 START_IP="0.0.0.0"                         # IP de début pour la règle de pare-feu
 END_IP="255.255.255.255"                   # IP de fin pour la règle de pare-feu
-
-# Récupération des variables d'environnement
-source .env_postgres
 
 # Variables provenant du fichier .env
 ADMIN_USER=$POSTGRES_USER
@@ -32,6 +32,7 @@ az postgres flexible-server create \
   --storage-type "$STORAGE_TYPE" \
   --performance-tier "$PERFORMANCE_TIER"
 
+  # --tier $TIER \
 # Configurer une règle de pare-feu pour autoriser les connexions
 az postgres flexible-server firewall-rule create \
   --resource-group $RESOURCE_GROUP \

@@ -57,3 +57,24 @@ def run():
 
 if __name__ == "__main__":
     run()
+    from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+    from dotenv import load_dotenv
+
+    dotenv_path = find_dotenv()
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+
+    account_name = os.getenv("BLOB_ACCOUNT_NAME")
+    account_key = os.getenv("BLOB_ACCOUNT_KEY")
+    container_name = os.getenv("BLOB_CONTAINER_NAME")
+    saving_file = os.getenv("saving_file")
+
+
+    blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+    blob_client = blob_service_client.get_blob_client(container=container_name,blob=saving_file + ".json")
+
+    scrapped_file_path = './data/films.json'
+
+    with open(local_file_path, "rb") as data:
+        blob_client.upload_blob(data, overwrite=True)
+        print(f"Fichier {local_file_path} uploadé dans le blob Azure '{container_name}'.")
+

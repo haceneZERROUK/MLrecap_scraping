@@ -1,18 +1,20 @@
 #!/bin/bash
 
+# Récupération des variables d'environnement
+source .env
 
 # Variables
-RESOURCE_GROUP="mboumedineRG"              # Nom du groupe de ressources
-CONTAINER_NAME="groupe2-init"          # Nom du conteneur
-SERVER_NAME="groupe2-server"
-ACR_NAME="mboumedineregistry"              # Nom de ton Azure Container Registry
-ACR_IMAGE="airflow-init"                   # Nom de l'image dans le ACR
-ACR_URL="$ACR_NAME.azurecr.io"             # URL du registre
-CPU="1"                                    # Nombre de CPUs
-MEMORY="2"                                 # Mémoire (RAM)
-IP_ADDRESS="Public"                        # Type d'IP (Public ou Private)
-DNS_LABEL="airflow-init"                     # Label DNS pour l'adresse publique
-OS_TYPE="Linux"                            # Type d'OS (Linux ou Windows)
+RESOURCE_GROUP="mboumedineRG"
+CONTAINER_NAME="groupe2-init"
+SERVER_NAME=$SERVER_NAME
+ACR_NAME="mboumedineregistry"
+ACR_IMAGE="init-airflow"
+ACR_URL="$ACR_NAME.azurecr.io"
+CPU="1"
+MEMORY="2"
+IP_ADDRESS="Public"
+DNS_LABEL="airflow-init"
+OS_TYPE="Linux"
 
 # Récupération dynamique des identifiants du ACR
 ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" -o tsv)
@@ -21,10 +23,20 @@ ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].val
 # Suppression du conteneur existant
 az container delete --name $CONTAINER_NAME --resource-group $RESOURCE_GROUP -y
 
-# Récupération des variables d'environnement
-source .env
+# Création du partage Azure Files (si pas déjà fait)
+az storage share create \
+  --account-name $AZ_FILES_ACCOUNT_NAME \
+  --name $FILE_SHARE_NAME \
+  --account-key $AZ_FILES_KEY
 
-# Déploiement du conteneur
+# Création des sous-dossiers dans le partage
+az storage directory create --name "dags" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+az storage directory create --name "logs" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+az storage directory create --name "plugins" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+az storage directory create --name "data" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+az storage directory create --name "upcoming" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+
+# Déploiement du conteneur avec le volume monté
 az container create \
     --name $CONTAINER_NAME \
     --resource-group $RESOURCE_GROUP \
@@ -41,20 +53,27 @@ az container create \
         AIRFLOW__CORE__EXECUTOR=$AIRFLOW__CORE__EXECUTOR \
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=$AIRFLOW__DATABASE__SQL_ALCHEMY_CONN \
         AIRFLOW__CORE__FERNET_KEY=$AIRFLOW__CORE__FERNET_KEY \
-        AIRFLOW__CORE__LOAD_EXAMPLES=$AIRFLOW__CORE__LOAD_EXAMPLES  \
-    # --azure-file-volume-share-name <NOM_DU_SHARE> \
-    # --azure-file-volume-account-name <NOM_DU_STORAGE_ACCOUNT> \
-    # --azure-file-volume-account-key <CLE_DU_STORAGE_ACCOUNT> \
-    # --azure-file-volume-mount-path /chemin/dans/le/conteneur
-
-az postgres flexible-server firewall-rule create \
-  --resource-group $RESOURCE_GROUP \
-  --name $SERVER_NAME \
-  --rule-name DockerAccess \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0
+        AIRFLOW__CORE__LOAD_EXAMPLES=$AIRFLOW__CORE__LOAD_EXAMPLES \
+        ACCOUNT_NAME=$BLOB_ACCOUNT_NAME \
+        ACCOUNT_KEY=$BLOB_ACCOUNT_KEY \
+        CONTAINER_NAME=$BLOB_CONTAINER_NAME \
+        saving_file=$saving_file \
+        AIRFLOW__CORE__DAGS_FOLDER=/mnt/airflow-files/dags \
+        AIRFLOW__LOGGING__BASE_LOG_FOLDER=/mnt/airflow-files/logs \
+        AIRFLOW__CORE__PLUGINS_FOLDER=/mnt/airflow-files/plugins \
+    --azure-file-volume-share-name $FILE_SHARE_NAME \
+    --azure-file-volume-account-name $AZ_FILES_ACCOUNT_NAME \
+    --azure-file-volume-account-key $AZ_FILES_KEY \
+    --azure-file-volume-mount-path $MOUNT_PATH
+  
+# az mysql flexible-server firewall-rule create \
+#   --resource-group $RESOURCE_GROUP \
+#   --name $SERVER_NAME \
+#   --rule-name allowAll \
+#   --start-ip-address 0.0.0.0 \
+#   --end-ip-address 0.0.0.0
 
 # Affichage des informations
 echo "Le déploiement a réussi."
 
-
+az storage share list --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
