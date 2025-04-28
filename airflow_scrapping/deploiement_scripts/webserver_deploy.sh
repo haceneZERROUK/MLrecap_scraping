@@ -1,18 +1,18 @@
 #!/bin/bash
+
+# Récupération des variables d'environnement
 source .env
 
-
 # Variables
-RESOURCE_GROUP="mboumedineRG"              # Nom du groupe de ressources
+RESOURCE_GROUP=$RESOURCE_GROUP
 CONTAINER_NAME="groupe2-webserver"         # Nom du conteneur
-SERVER_NAME=$SERVER_NAME
-ACR_NAME="mboumedineregistry"              # Nom de ton Azure Container Registry
+ACR_NAME=$ACR_NAME
 ACR_IMAGE="webserver-airflow"              # Nom de l'image dans le ACR
 ACR_URL="$ACR_NAME.azurecr.io"             # URL du registre
 CPU="1"                                    # Nombre de CPUs
 MEMORY="2"                                 # Mémoire (RAM)
 IP_ADDRESS="Public"                        # Type d'IP (Public ou Private)
-DNS_LABEL="airflow-webserver"                   # Label DNS pour l'adresse publique
+DNS_LABEL="webserver-airflow"                   # Label DNS pour l'adresse publique
 OS_TYPE="Linux"                            # Type d'OS (Linux ou Windows)
 
 # Récupération dynamique des identifiants du ACR
@@ -20,9 +20,7 @@ ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" -o tsv
 ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
 
 # Suppression du conteneur existant
-az container delete --name $CONTAINER_NAME --resource-group $RESOURCE_GROUP -y
-
-# Récupération des variables d'environnement
+az container delete --name $CONTAINER_NAME --resource-group $RESOURCE_GROUP -y || true
 
 # Déploiement du conteneur
 az container create \
@@ -51,16 +49,9 @@ az container create \
         AIRFLOW__LOGGING__BASE_LOG_FOLDER=/mnt/airflow-files/logs \
         AIRFLOW__CORE__PLUGINS_FOLDER=/mnt/airflow-files/plugins \
     --azure-file-volume-share-name $FILE_SHARE_NAME \
-    --azure-file-volume-account-name $AZ_FILES_ACCOUNT_NAME \
-    --azure-file-volume-account-key $AZ_FILES_KEY \
+    --azure-file-volume-account-name $BLOB_ACCOUNT_NAME \
+    --azure-file-volume-account-key $BLOB_ACCOUNT_KEY \
     --azure-file-volume-mount-path $MOUNT_PATH
-
-# az mysql flexible-server firewall-rule create \
-#   --resource-group $RESOURCE_GROUP \
-#   --name $SERVER_NAME \
-#   --rule-name allowAll \
-#   --start-ip-address 0.0.0.0 \
-#   --end-ip-address 0.0.0.0
 
 # Affichage des informations
 echo "Le déploiement a réussi."

@@ -5,12 +5,14 @@ WORKDIR /opt/airflow
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./dags ./dags
-COPY ./data ./data
-RUN mkdir -p ./logs
-RUN mkdir -p ./plugins
-COPY ./upcoming ./upcoming
-COPY ./run_spider.py ./run_spider.py
+COPY . /opt/airflow
+
+# COPY ./dags ./dags
+# COPY ./data ./data
+# RUN mkdir -p ./logs
+# RUN mkdir -p ./plugins
+# COPY ./upcoming ./upcoming
+# COPY ./run_spider.py ./run_spider.py
 
 COPY init_entrypoint.sh .
 

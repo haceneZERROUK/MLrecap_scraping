@@ -74,10 +74,12 @@ az acr login --name groupe2allocine
 docker tag scheduler_test:latest groupe2allocine.azurecr.io/scheduler:latest
 docker tag server_test:latest groupe2allocine.azurecr.io/webserver:latest
 docker tag init_test groupe2allocine.azurecr.io/init:latest 
+docker tag postgres groupe2allocine.azurecr.io/postgres:latest
 
 docker push groupe2allocine.azurecr.io/scheduler:latest
 docker push groupe2allocine.azurecr.io/webserver:latest
 docker push groupe2allocine.azurecr.io/init:latest
+docker push groupe2allocine.azurecr.io/postgres:latest
 
 az login                                                                                             # se connecter a azure
 az acr login --name groupe2allocine 
@@ -90,21 +92,42 @@ creer le deploy.sh pour déployer
 
 #################
 
-az container logs --resource-group kaassiRG --name airflow-instance
-
+az container logs --resource-group mboumedineRG --name airflow-init
+az container logs --resource-group mboumedineRG --name airflow-scheduler
+az container logs --resource-group mboumedineRG --name airflow-webserver
 
 
 docker tag init_test mboumedineregistry.azurecr.io/airflow-init:latest
 docker tag scheduler_test mboumedineregistry.azurecr.io/airflow-scheduler:latest
 docker tag server_test mboumedineregistry.azurecr.io/airflow-webserver:latest
 
+az acr login --name mboumedineregistry
+
 docker push mboumedineregistry.azurecr.io/airflow-init:latest
 docker push mboumedineregistry.azurecr.io/airflow-scheduler:latest
 docker push mboumedineregistry.azurecr.io/airflow-webserver:latest
 
+az acr build --registry mboumedineregistry --image airflow-init:latest --file Dockerfile.airflow-init .
+az acr build --registry mboumedineregistry --image airflow-scheduler:latest --file Dockerfile.scheduler .
+az acr build --registry mboumedineregistry --image airflow-webserver:latest --file Dockerfile.webserver .
+
+
 az container create --resource-group mboumedineRG --file deploy_all.YAML
 
+az container exec --resource-group mboumedineRG --name groupe2-scheduler --exec-command "/bin/bash"
 
 
 
+
+
+docker build -t server_test -f Dockerfile.webserver .
+docker build -t scheduler_test -f Dockerfile.scheduler .
+docker build -t init_test -f Dockerfile.airflow-init .
+docker tag init_test mboumedineregistry.azurecr.io/airflow-init:latest
+docker tag scheduler_test mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker tag server_test mboumedineregistry.azurecr.io/airflow-webserver:latest
+az acr login --name mboumedineregistry
+docker push mboumedineregistry.azurecr.io/airflow-init:latest
+docker push mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker push mboumedineregistry.azurecr.io/airflow-webserver:latest
 

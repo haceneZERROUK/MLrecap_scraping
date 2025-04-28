@@ -4,16 +4,15 @@
 source .env
 
 # Variables
-RESOURCE_GROUP="mboumedineRG"
+RESOURCE_GROUP=$RESOURCE_GROUP
 CONTAINER_NAME="groupe2-init"
-SERVER_NAME=$SERVER_NAME
-ACR_NAME="mboumedineregistry"
+ACR_NAME=$ACR_NAME
 ACR_IMAGE="init-airflow"
 ACR_URL="$ACR_NAME.azurecr.io"
 CPU="1"
 MEMORY="2"
 IP_ADDRESS="Public"
-DNS_LABEL="airflow-init"
+DNS_LABEL="init-airflow"
 OS_TYPE="Linux"
 
 # Récupération dynamique des identifiants du ACR
@@ -21,20 +20,20 @@ ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" -o tsv
 ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
 
 # Suppression du conteneur existant
-az container delete --name $CONTAINER_NAME --resource-group $RESOURCE_GROUP -y
+az container delete --name $CONTAINER_NAME --resource-group $RESOURCE_GROUP -y || true
 
 # Création du partage Azure Files (si pas déjà fait)
 az storage share create \
-  --account-name $AZ_FILES_ACCOUNT_NAME \
+  --account-name $BLOB_ACCOUNT_NAME \
   --name $FILE_SHARE_NAME \
-  --account-key $AZ_FILES_KEY
+  --account-key $BLOB_ACCOUNT_KEY
 
 # Création des sous-dossiers dans le partage
-az storage directory create --name "dags" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
-az storage directory create --name "logs" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
-az storage directory create --name "plugins" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
-az storage directory create --name "data" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
-az storage directory create --name "upcoming" --share-name $FILE_SHARE_NAME --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY
+az storage directory create --name "dags" --share-name $FILE_SHARE_NAME --account-name $BLOB_ACCOUNT_NAME --account-key $BLOB_ACCOUNT_KEY
+az storage directory create --name "logs" --share-name $FILE_SHARE_NAME --account-name $BLOB_ACCOUNT_NAME --account-key $BLOB_ACCOUNT_KEY
+az storage directory create --name "plugins" --share-name $FILE_SHARE_NAME --account-name $BLOB_ACCOUNT_NAME --account-key $BLOB_ACCOUNT_KEY
+az storage directory create --name "data" --share-name $FILE_SHARE_NAME --account-name $BLOB_ACCOUNT_NAME --account-key $BLOB_ACCOUNT_KEY
+az storage directory create --name "upcoming" --share-name $FILE_SHARE_NAME --account-name $BLOB_ACCOUNT_NAME --account-key $BLOB_ACCOUNT_KEY
 
 # Déploiement du conteneur avec le volume monté
 az container create \
@@ -62,18 +61,10 @@ az container create \
         AIRFLOW__LOGGING__BASE_LOG_FOLDER=/mnt/airflow-files/logs \
         AIRFLOW__CORE__PLUGINS_FOLDER=/mnt/airflow-files/plugins \
     --azure-file-volume-share-name $FILE_SHARE_NAME \
-    --azure-file-volume-account-name $AZ_FILES_ACCOUNT_NAME \
-    --azure-file-volume-account-key $AZ_FILES_KEY \
+    --azure-file-volume-account-name $BLOB_ACCOUNT_NAME \
+    --azure-file-volume-account-key $BLOB_ACCOUNT_KEY \
     --azure-file-volume-mount-path $MOUNT_PATH
   
-# az mysql flexible-server firewall-rule create \
-#   --resource-group $RESOURCE_GROUP \
-#   --name $SERVER_NAME \
-#   --rule-name allowAll \
-#   --start-ip-address 0.0.0.0 \
-#   --end-ip-address 0.0.0.0
-
 # Affichage des informations
 echo "Le déploiement a réussi."
 
-az storage share list --account-name $AZ_FILES_ACCOUNT_NAME --account-key $AZ_FILES_KEY

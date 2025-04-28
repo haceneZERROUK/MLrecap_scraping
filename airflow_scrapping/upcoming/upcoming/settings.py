@@ -91,8 +91,19 @@ ROBOTSTXT_OBEY = False
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
+# FEEDS = {
+#     './data/films.json': {
+#         'format': 'json',
+#         'encoding': 'utf8',
+#         'overwrite': True,
+#     }
+# }
+
+
+import os
+data_path = os.environ.get('DATA_PATH', '/mnt/airflow-files/data')
 FEEDS = {
-    './data/films.json': {
+    os.path.join(data_path, 'films.json'): {
         'format': 'json',
         'encoding': 'utf8',
         'overwrite': True,

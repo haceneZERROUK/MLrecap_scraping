@@ -3,6 +3,8 @@ import sys
 import logging
 from scrapy.utils.log import configure_logging
 
+data_path = os.environ.get('DATA_PATH', '/mnt/airflow-files/data')
+
 # Configuration globale du logger
 logging.basicConfig(
     level=logging.INFO,
@@ -19,7 +21,8 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_path)
 
 # Assure que le dossier data existe
-data_dir = os.path.join(base_path, 'data')
+# data_dir = os.path.join(base_path, 'data')
+data_dir = os.path.join("/mnt/airflow-files/data") 
 os.makedirs(data_dir, exist_ok=True)
 logger.info(f"Dossier data : {data_dir}")
 
@@ -48,6 +51,29 @@ def run():
         process = CrawlerProcess(settings)
         process.crawl(UpcomesSpider)
         process.start()
+        
+        from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+        from dotenv import load_dotenv, find_dotenv
+        
+        dot_env_path = find_dotenv()
+        load_dotenv(dotenv_path=dot_env_path, override=True)
+
+        account_name = os.getenv("BLOB_ACCOUNT_NAME")
+        account_key = os.getenv("BLOB_ACCOUNT_KEY")
+        container_name = os.getenv("BLOB_CONTAINER_NAME")
+        saving_file = os.getenv("saving_file")
+
+
+        blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+        blob_client = blob_service_client.get_blob_client(container=container_name,blob=saving_file + ".json")
+
+        scrapped_file_path = './data/films.json'
+        # scrapped_file_path = '/opt/airflow-files/data/films.json'
+        # scrapped_file_path = '/mnt/airflow-files/data/films.json'
+
+        with open(scrapped_file_path, "rb") as data:
+            blob_client.upload_blob(data, overwrite=True)
+            print(f"Fichier {scrapped_file_path} uploadé dans le blob Azure '{container_name}'.")
 
         logger.info(">>> Spider terminé avec succès")
         return True
@@ -55,26 +81,5 @@ def run():
         logger.error(f">>> Erreur du spider : {e}")
         return False
 
-if __name__ == "__main__":
-    run()
-    from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-    from dotenv import load_dotenv
-
-    dotenv_path = find_dotenv()
-    load_dotenv(dotenv_path=dotenv_path, override=True)
-
-    account_name = os.getenv("BLOB_ACCOUNT_NAME")
-    account_key = os.getenv("BLOB_ACCOUNT_KEY")
-    container_name = os.getenv("BLOB_CONTAINER_NAME")
-    saving_file = os.getenv("saving_file")
-
-
-    blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
-    blob_client = blob_service_client.get_blob_client(container=container_name,blob=saving_file + ".json")
-
-    scrapped_file_path = './data/films.json'
-
-    with open(local_file_path, "rb") as data:
-        blob_client.upload_blob(data, overwrite=True)
-        print(f"Fichier {local_file_path} uploadé dans le blob Azure '{container_name}'.")
-
+# if __name__ == "__main__":
+#     run()
