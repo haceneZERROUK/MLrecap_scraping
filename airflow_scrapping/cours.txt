@@ -1,0 +1,133 @@
+az acr login --name <acregistry-name>                                                                 # pour me login à mon compte ACR
+docker build -t <image-name> .                                                                  # il faut build l'image en local auparavant
+docker tag <image-name> <acregistry-name>.azurecr.io/<name>:latest                        # Taguer l'image Docker pour la pousser vers le registre (ACR)
+docker push <acregistry-name>.azurecr.io/<name>:latest                                            # pousser l'image sur l'Azure Container Registry
+az login                                                                                             # se connecter a azure
+az acr login --name <acregistry>                                                                  # se connecter a mon ACR (Azure Container Registry)
+
+
+#################################
+création des images
+
+# build l'image du serveur
+docker build -t server_test -f Dockerfile.webserver .
+
+# build l'image du scheduler
+docker build -t scheduler_test -f Dockerfile.scheduler .
+
+# build l'image du init
+docker build -t init_test -f Dockerfile.airflow-init .
+
+
+#################################
+
+# reseau
+docker network create airflow-network
+
+# volumes des dossiers    --> pour azure le volume  de montage se fera sur Azure Blob Fuse  ###############
+docker volume create pgdata
+docker volume create airflow-dags
+docker volume create airflow-logs
+docker volume create airflow-plugins
+docker volume create airflow-data
+docker volume create airflow-upcoming
+
+# db postgres
+docker run -d --name bdd_postgres --env-file .env_postgres --network airflow-network -v pgdata:/var/lib/postgresql/data postgres:latest
+
+# airflow init
+docker run -d --name airflow_init --env-file .env --network airflow-network \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  init_test:latest
+
+# scheduler
+docker run -d --name airflow_scheduler --env-file .env --network airflow-network \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  scheduler_test:latest
+
+# webserver
+docker run -d --name airflow_webserver --env-file .env --network airflow-network -p 8080:8080 \
+  -v airflow-dags:/opt/airflow/dags \
+  -v airflow-logs:/opt/airflow/logs \
+  -v airflow-plugins:/opt/airflow/plugins \
+  -v airflow-data:/opt/airflow/data \
+  -v airflow-upcoming:/opt/airflow/upcoming \
+  server_test:latest
+
+
+########################################
+
+envoie des images sur azure
+
+az login
+
+az acr login --name groupe2allocine 
+
+docker tag scheduler_test:latest groupe2allocine.azurecr.io/scheduler:latest
+docker tag server_test:latest groupe2allocine.azurecr.io/webserver:latest
+docker tag init_test groupe2allocine.azurecr.io/init:latest 
+docker tag postgres groupe2allocine.azurecr.io/postgres:latest
+
+docker push groupe2allocine.azurecr.io/scheduler:latest
+docker push groupe2allocine.azurecr.io/webserver:latest
+docker push groupe2allocine.azurecr.io/init:latest
+docker push groupe2allocine.azurecr.io/postgres:latest
+
+az login                                                                                             # se connecter a azure
+az acr login --name groupe2allocine 
+
+#####################################
+
+creer le deploy.sh pour déployer
+
+./deploy.sh
+
+#################
+
+az container logs --resource-group mboumedineRG --name airflow-init
+az container logs --resource-group mboumedineRG --name airflow-scheduler
+az container logs --resource-group mboumedineRG --name airflow-webserver
+
+
+docker tag init_test mboumedineregistry.azurecr.io/airflow-init:latest
+docker tag scheduler_test mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker tag server_test mboumedineregistry.azurecr.io/airflow-webserver:latest
+
+az acr login --name mboumedineregistry
+
+docker push mboumedineregistry.azurecr.io/airflow-init:latest
+docker push mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker push mboumedineregistry.azurecr.io/airflow-webserver:latest
+
+az acr build --registry mboumedineregistry --image airflow-init:latest --file Dockerfile.airflow-init .
+az acr build --registry mboumedineregistry --image airflow-scheduler:latest --file Dockerfile.scheduler .
+az acr build --registry mboumedineregistry --image airflow-webserver:latest --file Dockerfile.webserver .
+
+
+az container create --resource-group mboumedineRG --file deploy_all.YAML
+
+az container exec --resource-group mboumedineRG --name groupe2-scheduler --exec-command "/bin/bash"
+
+
+
+
+
+docker build -t server_test -f Dockerfile.webserver .
+docker build -t scheduler_test -f Dockerfile.scheduler .
+docker build -t init_test -f Dockerfile.airflow-init .
+docker tag init_test mboumedineregistry.azurecr.io/airflow-init:latest
+docker tag scheduler_test mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker tag server_test mboumedineregistry.azurecr.io/airflow-webserver:latest
+az acr login --name mboumedineregistry
+docker push mboumedineregistry.azurecr.io/airflow-init:latest
+docker push mboumedineregistry.azurecr.io/airflow-scheduler:latest
+docker push mboumedineregistry.azurecr.io/airflow-webserver:latest
+

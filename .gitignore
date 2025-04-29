@@ -233,6 +233,7 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,python,database
 notes.txt
+notes.txt
 allocine_full_movies.json
 dataset_nettoye/
 countries_codes.json
