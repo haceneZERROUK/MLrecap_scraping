@@ -120,8 +120,8 @@ class MovieSpider(scrapy.Spider):
             original_title_imdb = response.css("div.sc-ec65ba05-1.fUCCIx::text").get().replace("Titre original :", "").strip()
         else : 
             original_title_imdb = fr_title_imdb
-        
         release_year_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(1) > a::text").get()
+        
         certification_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(2) > a::text").get()
         duration_imdb = response.css("div.sc-70a366cc-0.bxYZmb > ul > li:nth-child(3)::text").get()
         score_imdb = response.css("span.sc-d541859f-1.imUuxf::text").get()       # target leaking

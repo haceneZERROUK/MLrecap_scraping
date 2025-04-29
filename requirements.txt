@@ -1,2 +1,5 @@
 Scrapy==2.12.0
 pandas
+azure-identity
+azure-storage-blob 
+dotenv
